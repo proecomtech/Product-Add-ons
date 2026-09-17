@@ -1,0 +1,87 @@
+{% comment %}
+  Product add-ons — storefront block.
+
+  Renders nothing itself. It emits a container carrying everything the script
+  needs, and product-addons.js fills it from the app proxy.
+
+  Why the collection ids are passed from Liquid: the app needs them to decide
+  whether a collection-targeted group applies to this product, and Liquid
+  already knows them. Sending them here keeps the proxy call to a single
+  database read instead of an Admin API round trip on every product view.
+
+  Why the proxy path is root-relative rather than built from shop.url: a
+  storefront can be served on a market domain that is not the shop's primary
+  domain, and an absolute URL would turn every add-on fetch into a blocked
+  cross-origin request. App proxy paths are same-origin by definition.
+
+  routes.root_url is "/" on the primary locale and "/fr-ca" on a localized one,
+  so appending directly would produce "//apps/..." in the first case. The
+  replace collapses it.
+
+  The data-t-* attributes carry every string the script shows a customer. None
+  is written in the JavaScript, so the storefront half translates with the rest
+  of the theme. See locales/en.default.json.
+{% endcomment %}
+
+{%- liquid
+  assign proxy_url = routes.root_url | append: '/apps/product-addons' | replace: '//apps', '/apps'
+-%}
+
+<div
+  class="product-addons"
+  data-product-addons
+  data-product-id="{{ product.id }}"
+  data-collections="{% for collection in product.collections %}{{ collection.id }}{% unless forloop.last %},{% endunless %}{% endfor %}"
+  data-proxy="{{ proxy_url }}"
+  data-currency="{{ cart.currency.iso_code }}"
+  data-locale="{{ request.locale.iso_code }}"
+  data-heading-size="{{ block.settings.heading_size }}"
+  data-show-heading="{{ block.settings.show_heading }}"
+  data-show-prices="{{ block.settings.show_prices }}"
+  data-t-required="{{ 'product_addons.required' | t }}"
+  data-t-no-thanks="{{ 'product_addons.no_thanks' | t }}"
+  data-t-choose="{{ 'product_addons.choose_an_option' | t }}"
+  data-t-total="{{ 'product_addons.total' | t }}"
+  data-t-fill-in="{{ 'product_addons.error_fill_in' | t }}"
+  data-t-tick="{{ 'product_addons.error_tick' | t }}"
+  data-t-add-failed="{{ 'product_addons.error_add_to_cart' | t }}"
+  {{ block.shopify_attributes }}
+></div>
+
+{% schema %}
+{
+  "name": "Product add-ons",
+  "target": "section",
+  "stylesheet": "product-addons.css",
+  "javascript": "product-addons.js",
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Place this block inside your product information section, directly above the add to cart button. It renders nothing on products that no add-on group targets."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_heading",
+      "label": "Show group heading",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "Heading size",
+      "options": [
+        { "value": "small", "label": "Small" },
+        { "value": "medium", "label": "Medium" },
+        { "value": "large", "label": "Large" }
+      ],
+      "default": "medium"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_prices",
+      "label": "Show add-on prices",
+      "default": true
+    }
+  ]
+}
+{% endschema %}

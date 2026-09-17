@@ -1,0 +1,165 @@
+// Prisma schema for Product Add-ons.
+// Reference: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// SQLite is the template default and is fine for development. For production
+// swap the provider (Postgres/MySQL) and re-run `prisma migrate dev` — nothing
+// below depends on SQLite except the absence of enums, which SQLite does not
+// support. The string fields that stand in for enums list their allowed values
+// in a comment, and app/models/addon.server.ts validates them on write.
+datasource db {
+  provider = "sqlite"
+  url      = "file:dev.sqlite"
+}
+
+model Session {
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?
+  expires             DateTime?
+  accessToken         String
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
+  refreshToken        String?
+  refreshTokenExpires DateTime?
+}
+
+// Per-shop state that is not a group. One row per installed shop.
+model ShopSetting {
+  shop String @id
+
+  // GID of the shop's Online Store publication. Paid add-ons are charged by
+  // adding a real product to the cart, and /cart/add.js refuses a product that
+  // is not published to the Online Store — so every add-on product has to be
+  // published to this. Looked up once and cached here because it never changes
+  // for a shop.
+  onlineStorePublicationId String?
+
+  // ISO currency code of the shop, cached for the admin's price inputs so the
+  // group editor does not have to hit the Admin API to render a currency
+  // symbol. Refreshed on each app load.
+  currencyCode String @default("USD")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// A set of add-ons and fields shown together on a product page.
+model AddonGroup {
+  id    String @id @default(cuid())
+  shop  String
+  title String
+
+  // Optional heading rendered above the group on the storefront. Falls back to
+  // `title` when blank, so merchants can name a group internally ("Q4 gift
+  // wrap test") without that name leaking to customers.
+  heading String?
+
+  active Boolean @default(true)
+
+  // Targeting. appliesTo is one of ALL | PRODUCTS | COLLECTIONS.
+  // targets is a JSON array of Admin GIDs, ignored when appliesTo is ALL.
+  appliesTo String @default("ALL")
+  targets   String @default("[]")
+
+  // How the paid options are chosen: MULTI (checkboxes, any number) or
+  // SINGLE (radios, at most one).
+  selection String @default("MULTI")
+
+  // Order the groups render in when a product matches more than one.
+  position Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  options AddonOption[]
+  fields  AddonField[]
+
+  @@index([shop, active])
+}
+
+// A paid add-on. Charged by adding its `variantGid` to the cart as its own
+// line, so the price the customer sees is the price Shopify charges — there is
+// no second source of truth to drift.
+model AddonOption {
+  id      String     @id @default(cuid())
+  groupId String
+  group   AddonGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?
+
+  // Minor units of the shop currency (cents). An integer, not a float: cart
+  // maths on floats rounds wrong at the third decimal and the customer sees a
+  // total that disagrees with checkout by a cent.
+  priceCents Int @default(0)
+
+  // The hidden product and variant that charge for this add-on. One product
+  // per add-on, titled the same as the add-on, so the cart line reads "Gift
+  // wrap" rather than "Product Add-ons / Gift wrap" — and so two groups can
+  // both have a "Gift wrap" without colliding on a variant option value.
+  //
+  // Both are null until the first successful sync with the Admin API. The
+  // storefront hides an option with no variant rather than showing a box that
+  // cannot be added to the cart. See app/models/addon-product.server.ts.
+  productGid String?
+  variantGid String?
+
+  // Set when the last sync failed, so the admin can show the merchant why an
+  // add-on is not live instead of silently dropping it.
+  syncError String?
+
+  // Most add-ons (gift wrap, engraving) ship with the parent item and must not
+  // add their own shipping cost or weight. Turn this on for an add-on that is
+  // a physical item in its own right.
+  requiresShipping Boolean @default(false)
+
+  position Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([groupId])
+}
+
+// A free personalization input. Carried to the order as a line item property
+// on the parent product, never as its own cart line.
+model AddonField {
+  id      String     @id @default(cuid())
+  groupId String
+  group   AddonGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  label String
+
+  // One of TEXT | TEXTAREA | SELECT | CHECKBOX | DATE | NUMBER.
+  type String @default("TEXT")
+
+  required    Boolean @default(false)
+  placeholder String?
+  helpText    String?
+
+  // JSON array of choice strings. Only read when type is SELECT.
+  choices String @default("[]")
+
+  // Character cap for TEXT/TEXTAREA. Null means no cap. Shopify itself caps a
+  // line item property value at 255 characters, which the storefront enforces.
+  maxLength Int?
+
+  position Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([groupId])
+}

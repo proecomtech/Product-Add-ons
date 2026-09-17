@@ -1,0 +1,11 @@
+{
+  "product_addons": {
+    "required": "Required",
+    "no_thanks": "No thanks",
+    "choose_an_option": "Choose an option",
+    "total": "Add-ons:",
+    "error_fill_in": "Please fill this in.",
+    "error_tick": "Please tick this to continue.",
+    "error_add_to_cart": "Sorry, we could not add that to your cart."
+  }
+}
