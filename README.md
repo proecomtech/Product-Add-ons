@@ -36,6 +36,12 @@ while developing, and your deployed host in production, then
 `shopify app deploy`. If the block renders nothing on a product page, check
 this first.
 
+The production host is `https://add-ons.proecomtech.com` — that is what
+`application_url`, `[auth].redirect_urls` and `[app_proxy].url` are committed to
+in `shopify.app.toml`, and what `SHOPIFY_APP_URL` points at in `.env`. Because
+`[build].automatically_update_urls_on_dev` is true, `shopify app dev` replaces
+the first two with your tunnel; restore them before `npm run deploy`.
+
 Other scripts:
 
 | Command | What it does |

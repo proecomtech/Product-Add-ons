@@ -3,11 +3,17 @@
 #
 # `client_id` is filled in by `shopify app config link`, which connects this
 # folder to an app in your Partner dashboard. Do not hand-write it.
-client_id = ""
+client_id = "ca36bda0a417b97674b1ee10e3c5476b"
 
 name = "Product Add-ons"
 handle = "product-addons"
 embedded = true
+
+# Public host the app is served from. `shopify app dev` rewrites this to the
+# tunnel URL while `[build].automatically_update_urls_on_dev` is true, so the
+# value below is the production one and has to be put back (and deployed)
+# after a dev session.
+application_url = "https://add-ons.proecomtech.com"
 
 [build]
 automatically_update_urls_on_dev = true
@@ -24,6 +30,14 @@ include_config_on_deploy = true
 #                  product is not published to the Online Store, so every
 #                  generated add-on product must be published to that channel.
 scopes = "read_products,write_products,read_publications,write_publications"
+
+[auth]
+# Both paths land on the `auth.$` splat route (app/routes/auth.$.tsx).
+# Rewritten alongside `application_url` by `shopify app dev`.
+redirect_urls = [
+  "https://add-ons.proecomtech.com/auth/callback",
+  "https://add-ons.proecomtech.com/auth/shopify/callback",
+]
 
 [webhooks]
 api_version = "2025-01"
@@ -63,6 +77,6 @@ api_version = "2025-01"
 # on the end (your dev tunnel while developing, your deployed host in
 # production), and a `shopify app deploy` is what publishes a change to it. If
 # add-ons never load on the storefront, this is the first thing to check.
-url = "https://example.com/proxy"
+url = "https://add-ons.proecomtech.com/proxy"
 subpath = "product-addons"
 prefix = "apps"
