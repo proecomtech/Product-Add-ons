@@ -17,7 +17,6 @@ application_url = "https://add-ons.proecomtech.com"
 
 [build]
 automatically_update_urls_on_dev = true
-include_config_on_deploy = true
 
 [access_scopes]
 # read_products  — the admin's product/collection pickers and the targeting

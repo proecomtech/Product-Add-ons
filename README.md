@@ -42,6 +42,29 @@ in `shopify.app.toml`, and what `SHOPIFY_APP_URL` points at in `.env`. Because
 `[build].automatically_update_urls_on_dev` is true, `shopify app dev` replaces
 the first two with your tunnel; restore them before `npm run deploy`.
 
+## GraphQL, for the iOS and Android apps
+
+Native clients read add-on configuration from
+
+```
+POST https://<shop-domain>/apps/product-addons/graphql
+{ "query": "{ addonConfig(productId: \"123\") { currency groups { heading options { title priceCents variantGid } } } }" }
+```
+
+It goes through the app proxy for the same reason the theme block does:
+Shopify signs the request, so there is no API key to ship inside an app
+binary. A client needs only the shop domain it already knows.
+
+`schema.graphql` at the repository root is the contract the clients generate
+types from (Apollo iOS, Apollo Kotlin). It is generated from
+`app/graphql/schema.ts` by `npm run graphql:schema` — edit the TypeScript, not
+the SDL, and `npm test` will tell you if you forgot to regenerate.
+
+Product and collection ids are accepted either as bare numbers or as GIDs.
+Each option carries `variantGid` for a Storefront API cart and `variantId` for
+`/cart/add.js`; the price the option shows is the variant price Shopify will
+charge, which is the point of the whole design below.
+
 Other scripts:
 
 | Command | What it does |
