@@ -6,7 +6,7 @@
 client_id = "ca36bda0a417b97674b1ee10e3c5476b"
 
 name = "Product Add-ons"
-handle = "product-addons"
+handle = "proecomtech-product-addons"
 embedded = true
 
 # Public host the app is served from. `shopify app dev` rewrites this to the

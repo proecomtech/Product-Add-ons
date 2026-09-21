@@ -1,8 +1,17 @@
 # Theme Check configuration for the Product add-ons theme app extension.
 
-extends: theme-app-extension:recommended
+# The bundled config for app extensions, which itself extends
+# theme-check:recommended. The `theme-check:` prefix is required — without it
+# the name is resolved as a node module and the build fails with
+# "Cannot find module".
+extends: theme-check:theme-app-extension
 
-AssetSizeJavaScript:
+# Note the rule names and the key spelling. An app extension is checked by the
+# AssetSizeAppBlock* rules, not AssetSizeJavaScript/AssetSizeCSS, and the
+# threshold key is camelCase `thresholdInBytes`. Getting either wrong is
+# silent: the block is accepted, ignored, and the default threshold applies.
+
+AssetSizeAppBlockJavaScript:
   enabled: true
   # The default is 10 KB measured on the raw file. product-addons.js is ~22 KB
   # raw and ~6.7 KB gzipped, and Shopify serves theme assets gzipped — so the
@@ -13,8 +22,10 @@ AssetSizeJavaScript:
   # 24 KB, not "off": it still fails if the file grows materially. If it does,
   # the fix is to split the cart reconciliation out rather than to raise this
   # again.
-  threshold_in_bytes: 24576
+  thresholdInBytes: 24576
 
-AssetSizeCSS:
+AssetSizeAppBlockCSS:
   enabled: true
-  threshold_in_bytes: 10240
+  # Deliberately far below the 100 KB default: the stylesheet is ~4.5 KB and
+  # styles one block. A tenfold jump would mean something is wrong.
+  thresholdInBytes: 10240
